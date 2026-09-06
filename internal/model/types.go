@@ -30,17 +30,17 @@ type Document struct {
 	ModTime         time.Time
 	FrontMatter     FrontMatter
 	FrontMatterRaw  string
-	FrontMatterFrom  int
-	FrontMatterTo    int
+	FrontMatterFrom int
+	FrontMatterTo   int
 	Warnings        []string
 
-	Headings []Heading
-	Sections []Section
-	Blocks   []Block
-	Tasks    []Task
-	Links    []Link
-	Tags     []Tag
-	Quotes   []Quote
+	Headings  []Heading
+	Sections  []Section
+	Blocks    []Block
+	Tasks     []Task
+	Links     []Link
+	Tags      []Tag
+	Quotes    []Quote
 	LinesRows []Line
 }
 
@@ -87,20 +87,20 @@ type Section struct {
 
 // Block is one normalized markdown block.
 type Block struct {
-	File   string
-	Kind   string
-	Start  int
-	End    int
-	Line   int
+	File    string
+	Kind    string
+	Start   int
+	End     int
+	Line    int
 	Section string
 	Path    string
-	Text   string
-	Raw    string
-	Lang   string
-	Info   string
-	Fence  string
-	Nested bool
-	Level  int
+	Text    string
+	Raw     string
+	Lang    string
+	Info    string
+	Fence   string
+	Nested  bool
+	Level   int
 }
 
 // Task is an Obsidian task list item with metadata.
