@@ -1,0 +1,26 @@
+# Local executables. Keep cmd/mdsql and skills/mdsql tracked.
+/mdsql
+/mdsql.exe
+/bin/
+/dist/
+*.test
+/coverage.out
+/coverage.html
+/coverage/
+
+# Local configuration, credentials, and private scratch documents.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.private.md
+/.local/
+/.cache/
+
+# Editor and operating-system files.
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
