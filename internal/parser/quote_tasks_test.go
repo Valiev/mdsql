@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -109,6 +110,9 @@ func TestNestedCalloutAndUnterminatedQuotedFence(t *testing.T) {
 }
 
 func TestQuotedTasksCacheRoundTrip(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("cache is unsupported on Windows")
+	}
 	raw := "> [!note]\n> - [ ] Cached #tag [[Link]] 📅 2026-09-05\n> ```\n> - [ ] Hidden #hidden [[Hidden]]\n> ```\n"
 	path := filepath.Join(t.TempDir(), "quotes.md")
 	if err := os.WriteFile(path, []byte(raw), 0600); err != nil {

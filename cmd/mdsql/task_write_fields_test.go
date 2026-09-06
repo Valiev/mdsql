@@ -2,10 +2,14 @@ package main
 
 import (
 	"reflect"
+	"runtime"
 	"testing"
 )
 
 func TestTaskWriteFieldsEndToEndRoundTrip(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows supports preview only")
+	}
 	const name = "tasks.md"
 	root, file := contractFixture(t, name, "\ufeff# Tasks\r\n- [ ] seed\r\n")
 	insert := "INSERT INTO tasks (section, text, due, scheduled, priority, tags) VALUES ('Tasks', 'ship', '2026-09-07', '2026-09-06', 5, 'work, #release')"

@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -12,6 +13,10 @@ func TestBOMFileAndStdin(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "bom.md")
 	t.Setenv("XDG_CACHE_HOME", filepath.Join(dir, "cache"))
+	fileFlags := []string{"--no-cache"}
+	if runtime.GOOS != "windows" {
+		fileFlags = []string{"--cache", "--cache"}
+	}
 	for _, sql := range []string{
 		"SELECT fm.title, raw, start, end FROM frontmatter",
 		"SELECT title, start, raw FROM headings",
@@ -30,8 +35,8 @@ func TestBOMFileAndStdin(t *testing.T) {
 			if err := os.WriteFile(path, []byte("\uFEFF"+plain), 0600); err != nil {
 				t.Fatal(err)
 			}
-			for i := 0; i < 2; i++ {
-				code, out, stderr = captureFeedbackRun(t, append(args, "--cache", path))
+			for i, cacheFlag := range fileFlags {
+				code, out, stderr = captureFeedbackRun(t, append(args, cacheFlag, path))
 				if code != 0 || out != expected || stderr != "" || strings.Contains(out, "\uFEFF") {
 					t.Fatalf("BOM file run %d: %d %q %q, want %q", i, code, out, stderr, expected)
 				}

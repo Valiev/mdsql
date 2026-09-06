@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"sort"
 	"testing"
 )
@@ -90,11 +91,15 @@ func TestMarkdownExtensionGlobsAreCaseInsensitive(t *testing.T) {
 
 func TestResolveExistingLiteralBeforeGlob(t *testing.T) {
 	root := t.TempDir()
-	for _, name := range []string{
-		"[draft].md", "d.md", "[unfinished.md", "literal*.md", "literal-other.md",
+	names := []string{
+		"[draft].md", "d.md", "[unfinished.md", "literal-other.md",
 		"normal/a.md", "normal/b.md", "[notes]/keep.md", "[notes]/skip.md", "n/decoy.md",
 		"cafe\u0301[draft].md", "cafe\u0301[notes]/nested.md",
-	} {
+	}
+	if runtime.GOOS != "windows" {
+		names = append(names, "literal*.md")
+	}
+	for _, name := range names {
 		path := filepath.Join(root, name)
 		if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 			t.Fatal(err)
@@ -103,7 +108,7 @@ func TestResolveExistingLiteralBeforeGlob(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	for _, tc := range []struct {
+	cases := []struct {
 		spec    string
 		include []string
 		exclude []string
@@ -112,7 +117,6 @@ func TestResolveExistingLiteralBeforeGlob(t *testing.T) {
 		{spec: "[draft].md", want: []string{"[draft].md"}},
 		{spec: filepath.Join(root, "[draft].md"), want: []string{"[draft].md"}},
 		{spec: "[unfinished.md", want: []string{"[unfinished.md"}},
-		{spec: "literal*.md", want: []string{"literal*.md"}},
 		{spec: "[notes]", want: []string{"[notes]/keep.md", "[notes]/skip.md"}},
 		{spec: "caf\u00e9[draft].md", want: []string{"cafe\u0301[draft].md"}},
 		{spec: "caf\u00e9[notes]", want: []string{"cafe\u0301[notes]/nested.md"}},
@@ -123,7 +127,16 @@ func TestResolveExistingLiteralBeforeGlob(t *testing.T) {
 		{spec: "[notes]", include: []string{"**/keep.md"}, want: []string{"[notes]/keep.md"}},
 		{spec: "[notes]", exclude: []string{"**/skip.md"}, want: []string{"[notes]/keep.md"}},
 		{spec: "normal/*.md", exclude: []string{"**/a.md"}, want: []string{"normal/b.md"}},
-	} {
+	}
+	if runtime.GOOS != "windows" {
+		cases = append(cases, struct {
+			spec    string
+			include []string
+			exclude []string
+			want    []string
+		}{spec: "literal*.md", want: []string{"literal*.md"}})
+	}
+	for _, tc := range cases {
 		t.Run(tc.spec, func(t *testing.T) {
 			want := make([]string, 0, len(tc.want))
 			for _, name := range tc.want {

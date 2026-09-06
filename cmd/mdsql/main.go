@@ -174,7 +174,7 @@ func run() int {
 		} else {
 			doc.RelPath = docPath
 		}
-		setDocumentPath(doc, filepath.ToSlash(doc.RelPath))
+		parser.SetDocumentPath(doc, filepath.ToSlash(doc.RelPath))
 		if executor == nil {
 			docs = append(docs, doc)
 		} else if executeErr := executor.ConsumeDocument(doc); executeErr != nil {
@@ -319,32 +319,4 @@ func run() int {
 		return 3
 	}
 	return 0
-}
-
-func setDocumentPath(doc *parser.Document, path string) {
-	doc.Path = path
-	for i := range doc.Headings {
-		doc.Headings[i].File = path
-	}
-	for i := range doc.Sections {
-		doc.Sections[i].File = path
-	}
-	for i := range doc.Blocks {
-		doc.Blocks[i].File = path
-	}
-	for i := range doc.Tasks {
-		doc.Tasks[i].File = path
-	}
-	for i := range doc.Links {
-		doc.Links[i].File = path
-	}
-	for i := range doc.Tags {
-		doc.Tags[i].File = path
-	}
-	for i := range doc.Quotes {
-		doc.Quotes[i].File = path
-	}
-	for i := range doc.LinesRows {
-		doc.LinesRows[i].File = path
-	}
 }

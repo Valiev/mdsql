@@ -643,7 +643,7 @@ func (f *FuncCallExpr) eval(row Row, ctx *EvalContext) (Value, error) {
 		}
 	case "dirname":
 		if len(vals) == 1 && vals[0].Kind == ValueString {
-			return NewString(filepath.Dir(vals[0].String())), nil
+			return NewString(filepath.ToSlash(filepath.Dir(vals[0].String()))), nil
 		}
 	}
 	return NewNull(), nil

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -29,6 +30,10 @@ func symlinkFixture(t *testing.T) string {
 func TestSymlinkPositionalINAndCachedLogicalPaths(t *testing.T) {
 	root := symlinkFixture(t)
 	t.Setenv("XDG_CACHE_HOME", filepath.Join(t.TempDir(), "cache"))
+	cacheFlags := []string{"--no-cache"}
+	if runtime.GOOS != "windows" {
+		cacheFlags = append(cacheFlags, "--cache", "--cache")
+	}
 	for _, tc := range []struct {
 		query string
 		files []string
@@ -40,7 +45,7 @@ func TestSymlinkPositionalINAndCachedLogicalPaths(t *testing.T) {
 		{"SELECT file, title FROM headings IN 'li*/**/*.md'", nil, []map[string]string{{"file": "linked/note.md", "title": "Linked"}}},
 		{"SELECT file, title FROM headings ORDER BY file", []string{"notes/note.md", "alias.md", "alias.md"}, []map[string]string{{"file": "alias.md", "title": "Linked"}, {"file": "notes/note.md", "title": "Linked"}}},
 	} {
-		for _, cacheFlag := range []string{"--no-cache", "--cache", "--cache"} {
+		for _, cacheFlag := range cacheFlags {
 			args := append([]string{cacheFlag, "--root", root, "--json", tc.query}, tc.files...)
 			code, out, stderr := captureFeedbackRun(t, args)
 			var got []map[string]string

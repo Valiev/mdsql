@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"testing"
 
 	"golang.org/x/text/unicode/norm"
@@ -24,6 +25,10 @@ func TestUnicodeSourcesDisplayNFCWithPhysicalIO(t *testing.T) {
 	}
 	t.Setenv("XDG_CACHE_HOME", filepath.Join(base, "cache"))
 	want := []map[string]string{{"file": nfcFile, "title": "Yoga"}}
+	cacheFlags := []string{"--no-cache"}
+	if runtime.GOOS != "windows" {
+		cacheFlags = append(cacheFlags, "--cache", "--cache")
+	}
 	for _, root := range []string{nfcRoot, nfdRoot} {
 		for _, tc := range []struct {
 			query  string
@@ -37,7 +42,7 @@ func TestUnicodeSourcesDisplayNFCWithPhysicalIO(t *testing.T) {
 			{query: "SELECT file, title FROM headings", source: ".", args: []string{"--include", "**/Йога.md"}},
 			{query: "SELECT file, title FROM headings IN 'Йо*.md'"},
 		} {
-			for _, cacheFlag := range []string{"--no-cache", "--cache", "--cache"} {
+			for _, cacheFlag := range cacheFlags {
 				args := append([]string{cacheFlag, "--root", root, "--json"}, tc.args...)
 				args = append(args, tc.query)
 				if tc.source != "" {

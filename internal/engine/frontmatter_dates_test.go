@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -54,19 +55,23 @@ Body.
 	if _, ok := doc.FrontMatter["midnight"].(time.Time); !ok {
 		t.Fatalf("midnight timestamp became a date: %#v", doc.FrontMatter["midnight"])
 	}
-	t.Setenv("XDG_CACHE_HOME", t.TempDir())
-	store, err := cache.OpenDefault()
-	if err != nil {
-		t.Fatal(err)
+	parsedDocuments := map[string]*parser.Document{"cold": doc}
+	if runtime.GOOS != "windows" {
+		t.Setenv("XDG_CACHE_HOME", t.TempDir())
+		store, err := cache.OpenDefault()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := store.Store(doc); err != nil {
+			t.Fatal(err)
+		}
+		warm, ok := store.Load(path, fi)
+		if !ok {
+			t.Fatal("cache miss")
+		}
+		parsedDocuments["warm"] = warm
 	}
-	if err := store.Store(doc); err != nil {
-		t.Fatal(err)
-	}
-	warm, ok := store.Load(path, fi)
-	if !ok {
-		t.Fatal("cache miss")
-	}
-	for name, parsed := range map[string]*parser.Document{"cold": doc, "warm": warm} {
+	for name, parsed := range parsedDocuments {
 		t.Run(name, func(t *testing.T) {
 			q, err := query.Parse("SELECT fm.start AS start, fm.quoted AS quoted, fm.stamp AS stamp, fm.midnight AS midnight, fm.spaced AS spaced, fm.similar AS similar FROM frontmatter WHERE fm.start BETWEEN 2026-09-01 AND today AND fm.quoted < today AND fm.nested.start = 2026-09-02 AND contains(fm.dates, 2026-09-02)")
 			if err != nil {

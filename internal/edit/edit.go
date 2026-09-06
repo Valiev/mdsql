@@ -80,6 +80,9 @@ func Execute(path string, stmt *query.WriteStatement, opts Options) (*Result, er
 	if err != nil {
 		return nil, err
 	}
+	if opts.SourceName != "" {
+		parser.SetDocumentPath(doc, opts.SourceName)
+	}
 	var after []byte
 	var matched, changed int
 	if stmt.Table == "frontmatter_values" {

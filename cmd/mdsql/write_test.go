@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -145,6 +146,13 @@ func TestWriteCLIApplyPreviewAndGuards(t *testing.T) {
 				t.Fatalf("preview wrote file: %q %v", data, err)
 			}
 			args[0] = "--json"
+			if runtime.GOOS == "windows" {
+				code, out, stderr = captureFeedbackRun(t, args)
+				if code != 1 || out != "" || !strings.Contains(stderr, "atomic writes are unsupported on this platform") {
+					t.Fatalf("apply support: code=%d out=%q stderr=%q", code, out, stderr)
+				}
+				return
+			}
 			code, out, stderr = captureFeedbackRun(t, args)
 			var result edit.Result
 			if err := json.Unmarshal([]byte(out), &result); err != nil || code != 0 || stderr != "" || !result.Applied || result.Matched != 1 || result.Changed != 1 {
@@ -239,6 +247,9 @@ func TestWriteDispatchLeavesCommentedSelectUntouched(t *testing.T) {
 }
 
 func TestWriteCLIInsertImmediatelyWithRoot(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows supports preview only")
+	}
 	for _, prefix := range [][]string{nil, {"query"}} {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "synthetic.md")
@@ -268,6 +279,9 @@ func TestWriteCLIInsertImmediatelyWithRoot(t *testing.T) {
 }
 
 func TestWriteCLIDecimalFrontmatterPredicate(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows supports preview only")
+	}
 	file := filepath.Join(t.TempDir(), "synthetic.md")
 	if err := os.WriteFile(file, []byte("---\nscore: 1.5\nother: 3.5\n---\n# Synthetic\n"), 0600); err != nil {
 		t.Fatal(err)
@@ -288,6 +302,9 @@ func TestWriteCLIDecimalFrontmatterPredicate(t *testing.T) {
 }
 
 func TestWriteLiteralPathsNeverExpandGlobs(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows supports preview only and forbids wildcard characters in filenames")
+	}
 	for _, name := range []string{"[draft].md", "literal*.md", "literal?.md"} {
 		dir := t.TempDir()
 		file := filepath.Join(dir, name)
@@ -407,13 +424,22 @@ func TestWriteFilePredicateUsesSelectIdentity(t *testing.T) {
 			}
 			predicate := strings.ReplaceAll(rows[0].File, "'", "\\'")
 			sql := "UPDATE tasks SET state='done' WHERE file='" + predicate + "' AND line=1"
-			code, out, stderr = captureFeedbackRun(t, append(append([]string{}, args...), "--expect-rows=1", sql, tc.file))
+			writeArgs := append(append([]string{}, args...), "--expect-rows=1", sql, tc.file)
+			if runtime.GOOS == "windows" {
+				writeArgs = append(writeArgs, "--dry-run")
+			}
+			code, out, stderr = captureFeedbackRun(t, writeArgs)
 			var result edit.Result
-			if err := json.Unmarshal([]byte(out), &result); err != nil || code != 0 || stderr != "" || !result.Applied || result.Matched != 1 || result.Changed != 1 {
+			wantApplied := runtime.GOOS != "windows"
+			if err := json.Unmarshal([]byte(out), &result); err != nil || code != 0 || stderr != "" || result.Applied != wantApplied || result.Matched != 1 || result.Changed != 1 {
 				t.Fatalf("identity=%q UPDATE code=%d stdout=%q stderr=%q error=%v", rows[0].File, code, out, stderr, err)
 			}
 			data, err := os.ReadFile(physical)
-			if err != nil || string(data) != "- [x] identity\n" {
+			wantData := "- [x] identity\n"
+			if !wantApplied {
+				wantData = "- [ ] identity\n"
+			}
+			if err != nil || string(data) != wantData {
 				t.Fatalf("wrong physical write: bytes=%q error=%v", data, err)
 			}
 		})
@@ -478,9 +504,14 @@ func TestWriteDotRootAbsoluteSourceIdentity(t *testing.T) {
 	// (/var versus /private/var). Preserve exactly what SELECT displayed.
 	identity := strings.ReplaceAll(rows[0].File, "'", "\\'")
 	sql := "UPDATE tasks SET state='done' WHERE file='" + identity + "' AND text='Synthetic'"
-	code, out, stderr = captureFeedbackRun(t, []string{"--root", ".", "--expect-rows=1", "--json", sql, file})
+	writeArgs := []string{"--root", ".", "--expect-rows=1", "--json", sql, file}
+	if runtime.GOOS == "windows" {
+		writeArgs = append(writeArgs, "--dry-run")
+	}
+	code, out, stderr = captureFeedbackRun(t, writeArgs)
 	var result edit.Result
-	if err := json.Unmarshal([]byte(out), &result); err != nil || code != 0 || stderr != "" || result.Matched != 1 || result.Changed != 1 || !result.Applied {
+	wantApplied := runtime.GOOS != "windows"
+	if err := json.Unmarshal([]byte(out), &result); err != nil || code != 0 || stderr != "" || result.Matched != 1 || result.Changed != 1 || result.Applied != wantApplied {
 		t.Fatalf("code=%d stdout=%q stderr=%q result=%#v error=%v", code, out, stderr, result, err)
 	}
 }

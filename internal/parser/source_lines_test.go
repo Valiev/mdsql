@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -15,10 +16,14 @@ import (
 )
 
 func TestPhysicalLinesAndEmptyBodyRanges(t *testing.T) {
-	t.Setenv("XDG_CACHE_HOME", t.TempDir())
-	store, err := cache.OpenDefault()
-	if err != nil {
-		t.Fatal(err)
+	var store *cache.Cache
+	if runtime.GOOS != "windows" {
+		t.Setenv("XDG_CACHE_HOME", t.TempDir())
+		var err error
+		store, err = cache.OpenDefault()
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 	for _, tc := range []struct {
 		name, raw string
@@ -75,12 +80,14 @@ func TestPhysicalLinesAndEmptyBodyRanges(t *testing.T) {
 					}
 				}
 			}
-			if err := store.Store(doc); err != nil {
-				t.Fatal(err)
-			}
-			warm, ok := store.Load(path, fi)
-			if !ok || !reflect.DeepEqual(doc, warm) {
-				t.Fatalf("cache changed physical line/range data: hit=%t cold=%#v warm=%#v", ok, doc, warm)
+			if store != nil {
+				if err := store.Store(doc); err != nil {
+					t.Fatal(err)
+				}
+				warm, ok := store.Load(path, fi)
+				if !ok || !reflect.DeepEqual(doc, warm) {
+					t.Fatalf("cache changed physical line/range data: hit=%t cold=%#v warm=%#v", ok, doc, warm)
+				}
 			}
 		})
 	}

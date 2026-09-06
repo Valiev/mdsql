@@ -4,12 +4,16 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/Valiev/mdsql/internal/cache"
 )
 
 func TestCacheInfoAndEnvironment(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("cache is unsupported on Windows")
+	}
 	base := t.TempDir()
 	t.Setenv("XDG_CACHE_HOME", filepath.Join(base, "cache"))
 	t.Setenv("MDSQL_CACHE", "1")

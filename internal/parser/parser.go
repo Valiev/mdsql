@@ -66,6 +66,35 @@ func ParseFile(path, raw string, size int64, mtime time.Time) (*model.Document, 
 	return doc, nil
 }
 
+// SetDocumentPath replaces the logical path exposed by every document row.
+func SetDocumentPath(doc *Document, path string) {
+	doc.Path = path
+	for i := range doc.Headings {
+		doc.Headings[i].File = path
+	}
+	for i := range doc.Sections {
+		doc.Sections[i].File = path
+	}
+	for i := range doc.Blocks {
+		doc.Blocks[i].File = path
+	}
+	for i := range doc.Tasks {
+		doc.Tasks[i].File = path
+	}
+	for i := range doc.Links {
+		doc.Links[i].File = path
+	}
+	for i := range doc.Tags {
+		doc.Tags[i].File = path
+	}
+	for i := range doc.Quotes {
+		doc.Quotes[i].File = path
+	}
+	for i := range doc.LinesRows {
+		doc.LinesRows[i].File = path
+	}
+}
+
 // SourceLines splits normalized source into physical lines without a trailing sentinel.
 func SourceLines(content string) []string {
 	lines := strings.Split(content, "\n")
