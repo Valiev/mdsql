@@ -1,4 +1,4 @@
-go 1.22
+go 1.26.0
 
 module github.com/Valiev/mdsql
 
@@ -8,4 +8,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-require golang.org/x/text v0.22.0
+require golang.org/x/text v0.42.0
